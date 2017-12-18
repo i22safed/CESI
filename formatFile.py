@@ -11,12 +11,12 @@ def formatFile():
     
     ruta = "/home/david/code/CESI/"
     
-    file = open(ruta+'1.txt','r')
-    aux = open(ruta+'formatted.txt','w')
+    file = open(ruta+'formatted.txt','r')
+    aux = open(ruta+'formatted1.txt','w')
     
     for line in file: 
-        if 'cd91dce2a414' in line: 
-            aux.write(line)
+        if '.' in line: 
+            aux.write(line.replace('.',','))
         
     file.close()
     aux.close()

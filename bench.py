@@ -8,20 +8,20 @@ Created on Thu Dec  7 17:06:54 2017
 @author: david
 """
 import ftplib
-from os import chdir, listdir, system
+from os import chdir, listdir, system, rename
 import threading 
 
 
 host = 'localhost'
-user = 'muro'
+user = 'david'
 password = '1234'
 
 
 def uploadFiles(pMon, pKill): 
 
     ftp = startService(host,user,password)
+    createDirs(ftp)
     pMon.start()
-    #createDirs(ftp)
     
     ruta = "/home/david/code/CESI/cargaPrueba/imagenesPequenas/"
     chdir(ruta)
@@ -31,6 +31,14 @@ def uploadFiles(pMon, pKill):
         f = open(file,'rb')
         print(ftp.storbinary('STOR '+file,f))
         f.close()
+    
+    pKill.start()  
+    pMon.join()
+    pKill.join()
+    
+    rename("/home/david/code/CESI/stats.txt","/home/david/code/CESI/stats1.txt")
+    
+    pMon.start()
     
     ruta = "/home/david/code/CESI/cargaPrueba/imagenesMedianas/"
     chdir(ruta)
@@ -42,23 +50,29 @@ def uploadFiles(pMon, pKill):
         print(ftp.storbinary('STOR '+file,f))
         f.close()
 
+    pKill.start()  
+    pMon.join()
+    pKill.join()
+
+    rename("/home/david/code/CESI/stats.txt","/home/david/code/CESI/stats2.txt")
+
     ruta = "/home/david/code/CESI/cargaPrueba/imagenesGrandes/"
     chdir(ruta)
     ftp.cwd("/")
     ftp.cwd("cargaPrueba/imagenesGrandes/")
    
+    pMon.start()
+    
     for file in listdir(ruta):
         f = open(file,'rb')
         print(ftp.storbinary('STOR '+file,f))
         f.close()
     
-    pKill.start()
+    pKill.start()  
     pMon.join()
-    pKill.join()  
+    pKill.join() 
     
-    #system('sudo docker exec -it ftpd_server /bin/bash')
-    
-
+    rename("/home/david/code/CESI/stats.txt","/home/david/code/CESI/stats3.txt")
     
     print(endService(ftp))
     
@@ -94,24 +108,15 @@ def cleanFTP():
     
     ftp.delete("*.jpg")
     ftp.delete("*.JPG")
-    
-    
-    """for file in files:
-        print(file)
-        ftp.delete(file)"""
         
     ftp.cwd("/")
     ftp.cwd("cargaPrueba")
     ftp.rmd("imagenesGrandes")
     
-    
     ftp.cwd("imagenesMedianas")
-    
+
     ftp.delete("*.jpg")
     ftp.delete("*.JPG")
-    
-    """for file in files:
-        ftp.delete(file)"""
 
     ftp.cwd("/")
     ftp.cwd("cargaPrueba")
@@ -121,9 +126,6 @@ def cleanFTP():
     ftp.cwd("cargaPrueba")
     ftp.cwd("imagenesPequenas")
     
-    
-    """for file in files:
-        ftp.delete(file)    """
     
     ftp.delete("*.jpg")
     ftp.delete("*.JPG")
@@ -142,16 +144,65 @@ def dowloadFiles():
 
     ftp = startService(host,user,password)
     
+    pMon.start()
+    
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesGrandes")
+
+    for file in ftp.dir: 
+        ftp.retrbinary('RETR '+file+'.txt',open(file+'.txt','wb').write) 
+        
+    ftp.cwd("/")
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesMedianas")
+
+    for file in ftp.dir: 
+        ftp.retrbinary('RETR '+file+'.txt',open(file+'.txt','wb').write) 
+
+    ftp.cwd("/")
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesPequenas")
+    
+    for file in ftp.dir: 
+        ftp.retrbinary('RETR '+file+'.txt',open(file+'.txt','wb').write) 
+    
+    pKill.start()  
+    pMon.join()
+    pKill.join()
+
     endService(ftp)
 
-def monitor(i):
+def listFiles():
+    
+    ftp = startService(host,user,password)
+    
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesGrandes")
+
+    ftp.dir(ftp.cwd)
+        
+    ftp.cwd("/")
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesMedianas")
+
+    ftp.dir(ftp.cwd)
+
+    ftp.cwd("/")
+    ftp.cwd("cargaPrueba")
+    ftp.cwd("imagenesPequenas")
+    
+    ftp.dir(ftp.cwd)
+    
+    endService(ftp)
+
+def monitor(nombre):
     
     system('sudo docker stats > /home/david/code/CESI/stats.txt')
     
     
 def kill():
     
-    system('sudo kill -15 $(pidof sudo)')
+    system('sudo kill -15 $(pidof bash)')
     
     
 pMon = threading.Thread(name="mon",target=monitor)
